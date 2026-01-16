@@ -1,6 +1,6 @@
 package org.nigel.models;
 
-public class transaction {
+public class Transaction {
     /*
     date|time|description|vendor|amount
     2023-04-15|10:13:25|ergonomic keyboard|Amazon|-89.50
@@ -54,8 +54,8 @@ public class transaction {
     private double amount;
 
     // methods
-    public transaction() {}
-    public transaction(String Date, String Time, String Description, String Vendor, double amount) {
+    public Transaction() {}
+    public Transaction(String Date, String Time, String Description, String Vendor, double amount) {
         this.Date = Date;
         this.Time = Time;
         this.Description = Description;

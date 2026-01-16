@@ -1,9 +1,9 @@
 package org.nigel.screens;
 
 import org.nigel.App;
-import org.nigel.Services.Initalizing;
+import org.nigel.Services.Initializing;
 import org.nigel.screens.designs.LedgerDesign;
-import org.nigel.utils.cli;
+import org.nigel.utils.CLI;
 
 import java.text.SimpleDateFormat;
 import java.time.Year;
@@ -57,8 +57,9 @@ public class Ledger {
                     break;
                 case "0":
                     App.LedgerMenu();
+                    break;
                 default:
-                    cli.LabelWarning("Invalid input.");
+                    CLI.LabelWarning("Invalid input.");
             }
         }
     }
@@ -82,15 +83,15 @@ public class Ledger {
             String UserInputCustomSearchLowerCase = UserInputCustomSearch.split(" ")[0].toLowerCase();
             switch (UserInputCustomSearchLowerCase) {
                 case "1":
-                    cli.LabelInformation("Format Data such: Year-Month");
-                    cli.LabelInformation("Format Data such: 2007-01");
+                    CLI.LabelInformation("Format Data such: Year-Month");
+                    CLI.LabelInformation("Format Data such: 2007-01");
                     System.out.print("Format Date: ");
                     String UserInputDate = scan.nextLine();
                     DisplayCustomSearchStartDate(UserInputDate);
                     break;
                 case "2":
-                    cli.LabelInformation("Format Data such: Year-Month");
-                    cli.LabelInformation("Format Data such: 2007-01");
+                    CLI.LabelInformation("Format Data such: Year-Month");
+                    CLI.LabelInformation("Format Data such: 2007-01");
                     System.out.print("Format Date: ");
                     String UserEndDate = scan.nextLine();
                     DisplayCustomSearchEndDate(UserEndDate);
@@ -111,7 +112,7 @@ public class Ledger {
                         double UserInputAmount = scan.nextDouble();
                         DisplayCustomSearchAmount(UserInputAmount);
                     }catch (java.util.InputMismatchException e) {
-                        cli.LabelWarning("Requires a double not a string.");
+                        CLI.LabelWarning("Requires a double not a string.");
                     }
                     break;
                 case "0":
@@ -119,7 +120,7 @@ public class Ledger {
                     DisplayReports(scan);
                     break;
                 default:
-                    cli.LabelWarning("Invalid input.");
+                    CLI.LabelWarning("Invalid input.");
             }
         }
     }
@@ -230,23 +231,22 @@ public class Ledger {
     public static void DisplayPreviousMonth() {
         String getToday = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime()); // 2025-10-15
         String[] ParseTodayDate = getToday.split("-");
-        String CurrentYear = ParseTodayDate[0];
+        String previousYear = ParseTodayDate[0];
         String CurrentMonth = ParseTodayDate[1];
-        int PreviousMonthNumber = Integer.parseInt(CurrentMonth) - 1;
+        int previousMonthNumber = Integer.parseInt(CurrentMonth) - 1;
 
-        if(PreviousMonthNumber == 0) {
-            PreviousMonthNumber = 12;
-            CurrentYear = String.valueOf(Integer.parseInt(CurrentYear) - 1);
+        if (previousMonthNumber == 0) {
+            previousMonthNumber = 12;
+            previousYear = String.valueOf(Integer.parseInt(previousYear) - 1);
         }
-        String PreviousMonthFormatted = String.format("%20d", PreviousMonthNumber);
-        String LastMonth = CurrentYear + "-" + PreviousMonthFormatted; // 2025-09
+        String previousMonthFormatted = String.format("%02d", previousMonthNumber);
+        String formatCurrent = String.format("%s-%s", previousYear, previousMonthFormatted);
 
-        String FormatCurrent = String.format("%s-%s", CurrentYear, LastMonth);
         System.out.println("\t============Display Previous-Month==================");
         System.out.println("\tVendor, Description, Date, Time, Amount");
         System.out.println("\t------------------------------------------------------------");
         for (int i = 0; i < App.TransactionsArray.size(); i++) {
-            if(App.TransactionsArray.get(i).getDate().startsWith(FormatCurrent)) { // 2025-09
+            if (App.TransactionsArray.get(i).getDate().startsWith(formatCurrent)) { // 2025-09
                 System.out.printf("\t%s | %s | %s | %s | %s %n", App.TransactionsArray.get(i).getVendor(), App.TransactionsArray.get(i).getDescription(), App.TransactionsArray.get(i).getDate(), App.TransactionsArray.get(i).getTime(), App.TransactionsArray.get(i).getAmount());
             }
         }

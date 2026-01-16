@@ -1,288 +1,267 @@
 package org.nigel.screens;
 
 import org.nigel.App;
-import org.nigel.Services.Initalizing;
-import org.nigel.models.debit;
-import org.nigel.models.transaction;
+import org.nigel.models.Debit;
+import org.nigel.models.Transaction;
 import org.nigel.screens.designs.Receipt;
-import org.nigel.utils.files;
-import org.nigel.utils.cli;
+import org.nigel.utils.FileUtils;
+import org.nigel.utils.CLI;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Scanner;
-import java.util.TreeMap;
 
 public class Home {
-    private static int RetriedProgram = 0;
+    private static final SecureRandom secureRandom = new SecureRandom();
+    private static final int MAX_RETRY_ATTEMPTS = 3;
 
-    public static void AddDeposit(){
-        Scanner scan = new Scanner(System.in);
-        transaction Transaction = new transaction();
+    public static void AddDeposit(Scanner scan){
+        Transaction newTransaction = new Transaction();
         System.out.print("What is the vendors name: ");
-        String UserInputVendor = scan.nextLine();
+        String userInputVendor = scan.nextLine();
         System.out.print("Set a Description: ");
-        String UserInputDescription = scan.nextLine();
+        String userInputDescription = scan.nextLine();
         System.out.print("Amount: ");
-        try{
-            double UserInputAmount = scan.nextDouble();
+        try {
+            double userInputAmount = scan.nextDouble();
             scan.nextLine();
 
-            Transaction.setVendor(UserInputVendor);
-            Transaction.setDescription(UserInputDescription);
-            Transaction.setAmount(UserInputAmount);
-            Transaction.setDate(LocalDate.now().toString());
-            Transaction.setTime(LocalTime.now().toString());
-            files.WriteFile("files/transactions.csv", true, Transaction.toFormat());
-            App.TransactionsArray.add(Transaction);
-            cli.LabelSuccess("Deposited %.2f from %s", UserInputAmount, UserInputVendor);
-        }catch (java.util.InputMismatchException e) {
-            cli.LabelWarning("Input mismatch. Requires Double not String.");
+            if (userInputAmount <= 0) {
+                CLI.LabelWarning("Amount must be positive for deposits.");
+                return;
+            }
+
+            newTransaction.setVendor(userInputVendor);
+            newTransaction.setDescription(userInputDescription);
+            newTransaction.setAmount(userInputAmount);
+            newTransaction.setDate(LocalDate.now().toString());
+            newTransaction.setTime(LocalTime.now().toString());
+            FileUtils.WriteFile(FileUtils.TRANSACTIONS_FILE, true, newTransaction.toFormat());
+            App.TransactionsArray.add(newTransaction);
+            CLI.LabelSuccess("Deposited %.2f from %s", userInputAmount, userInputVendor);
+        } catch (java.util.InputMismatchException e) {
+            scan.nextLine(); // Clear the invalid input
+            CLI.LabelWarning("Input mismatch. Requires a number, not text.");
         }
     }
 
     public static void MakePaymentCommand(Scanner scan) {
-        if(App.DebitCardArrays.size() > 1 && RetriedProgram == 0) {
-
-            // select a new debit card
-            System.out.println("===Select Debit Cards by Index Number===");
-            int index = 0;
-            for (int i = 0; i < App.DebitCardArrays.size(); i++) {
-                ++index;
-                System.out.printf("%d - %s%n", index, App.DebitCardArrays.get(i).getCardNumber());
-            }
-            try {
-                System.out.print("Choose Index Number: ");
-                int ChooseNumber = scan.nextInt();
-                scan.nextLine();
-                if(ChooseNumber > App.DebitCardArrays.size()) { // if they choose a number higher then usual
-                    System.out.println("you can't go higher then index number");
-                    System.out.println();
-                    MakePaymentCommand(scan);
-                } else {
-                    debit CurrentCard = App.DebitCardArrays.get(ChooseNumber - 1);
-                    System.out.println();
-                    System.out.println("\t\t=== Current Card Information ===");
-                    System.out.println("\tCurrent Card: " + CurrentCard.getCardNumber() + " | " + "\tCVV: " + CurrentCard.getCardCVV());
-                    System.out.println("\tCard Holder Name: " + CurrentCard.getCardHolderFullName() + " | " + "\tAmount: " + CurrentCard.getCardAmount());
-                    System.out.println("\tCard Holder Address: " + CurrentCard.getHomeAddress() + " | " + "\tExpiration: " + CurrentCard.getCardExpiration());
-                    System.out.println();
-                    if(CurrentCard.getCardAmount() < 0) {
-                        cli.LabelWarning("Your currently in debt, by using this card you're gonna go more in debt.");
-                    }
-                    System.out.println("Is this information Correct?");
-                    System.out.print("[Yes/No]: ");
-                    String InformationCorrectChoice = scan.nextLine();
-
-                    if(InformationCorrectChoice.equalsIgnoreCase("yes")) {
-                        // making payment
-                        System.out.println();
-                        System.out.println("Leave blank to pay all bills.");
-                        System.out.print("Enter vendor name:");
-                        String UserInputVendor = scan.nextLine();
-                        if(UserInputVendor.isEmpty()) {
-                            UserInputVendor = null;
-                        }
-
-                        double CurrentBalance = CurrentCard.getCardAmount();
-                        double Owed = MakePaymentAction(CurrentCard, UserInputVendor);
-                        if(Owed != 0) {
-                            cli.LabelInformation("You paid %.2f for the transactions.", Owed);
-                            System.out.println("Do you request a Receipt?");
-                            System.out.print("[Yes/No]: ");
-                            String UserRequestReceipt = scan.nextLine(); // Ask if user wants receipt
-                            if(UserRequestReceipt.equalsIgnoreCase("yes")) {
-                                cli.LabelInformation("Processing Receipt.");
-                                Receipt.generate(Owed, Owed, Owed, "Ledger Application", CurrentCard);
-
-                            } else {
-                                cli.LabelInformation("Declined Recipt.");
-                            }
-                        } else {
-                            cli.LabelInformation("You have no bill.");
-                        }
-                    } else if(InformationCorrectChoice.equalsIgnoreCase("no")) {
-                        // Rerun the application
-                        ++RetriedProgram;
-                        MakePaymentCommand(scan);
-                    } else {
-                        System.out.println("Invalid option. Please re-try.");
-                        MakePaymentCommand(scan);
-                    }
-
-                }
-
-
-            }catch(java.util.InputMismatchException e) {
-                System.out.println("Error: Can't accept provided character");
-                MakePaymentCommand(scan);
-            }
-
-
-        } else if(App.DebitCardArrays.size() == 1 && RetriedProgram == 0) {
-            // ask if you want to use this
-            debit CurrentCard = App.DebitCardArrays.getFirst();
-            System.out.println("\t\t== Current Card Information ==");
-            System.out.println("\tCurrent Card: " + CurrentCard.getCardNumber() + " | " + "\tCVV: " + CurrentCard.getCardCVV());
-            System.out.println("\tCard Holder Name: " + CurrentCard.getCardHolderFullName() + " | " + "\tAmount: " + CurrentCard.getCardAmount());
-            System.out.println("\tCard Holder Address: " + CurrentCard.getHomeAddress() + " | " + "\tExpiration: " + CurrentCard.getCardExpiration());
-            System.out.println();
-            if(CurrentCard.getCardAmount() < 0) {
-                cli.LabelWarning("Your currently in debt, by using this card you're gonna go more in debt.");
-            }
-            System.out.println("Is this information Correct?");
-            System.out.print("[Yes/No]: ");
-            String InformationCorrectChoice = scan.nextLine();
-
-            if(InformationCorrectChoice.equalsIgnoreCase("yes")) {
-                // making payment
-                System.out.println();
-                System.out.println("Leave blank to pay all bills.");
-                System.out.print("Enter vendor name:");
-                String UserInputVendor = scan.nextLine();
-                if(UserInputVendor.isEmpty()) {
-                    UserInputVendor = null;
-                }
-
-                double CurrentBalance = CurrentCard.getCardAmount();
-
-                double Owed = MakePaymentAction(CurrentCard, UserInputVendor);
-                if(Owed != 0) {
-                    cli.LabelInformation("You paid %.2f for the transactions.", Owed);
-                    System.out.println("Do you request a Receipt?");
-                    System.out.print("[Yes/No]: ");
-                    String UserRequestReceipt = scan.nextLine(); // Ask if user wants receipt
-                    if(UserRequestReceipt.equalsIgnoreCase("yes")) {
-                        cli.LabelInformation("Processing Receipt.");
-                        Receipt.generate(Owed, Owed, 0, "Ledger Application", CurrentCard);
-
-                    } else {
-                        cli.LabelInformation("Declined Recipt.");
-                    }
-                } else {
-                    cli.LabelInformation("You have no bill.");
-                }
-            } else if(InformationCorrectChoice.equalsIgnoreCase("no")) {
-                // Rerun the application
-                ++RetriedProgram;
-                MakePaymentCommand(scan);
-            } else {
-                System.out.println("Invalid option. Please re-try.");
-                MakePaymentCommand(scan);
-            }
-        } else {
-            RetriedProgram = 0;
-            // add new debit card
-            System.out.print("What is your name: ");
-            String UserInputName = scan.nextLine();
-            System.out.print("What is your home address: ");
-            String UserInputHomeAddress = scan.nextLine();
-            System.out.print("What is the Card Number: ");
-            String UserInputCardNumber = scan.nextLine();
-            System.out.print("What is the Card CVV: ");
-            int UserInputCardCVV = scan.nextInt();
-            scan.nextLine();
-            System.out.print("What is the Card Expiration: ");
-            String UserInputCardExpiration = scan.nextLine();
-            System.out.print("What is the Card Holding Amount: ");
-            String UserInputCardAmount = scan.nextLine();
-
-            // Verify information
-            System.out.println();
-            System.out.println("\t\t== User Input Information==");
-            System.out.println("\tCurrent Card: " + UserInputCardNumber + " | " + "\tCVV: " + UserInputCardCVV);
-            System.out.println("\tCard Holder Name: " +UserInputName + " | " + "\tAmount: " + UserInputCardAmount);
-            System.out.println("\tCard Holder Address: " + UserInputHomeAddress + " | " + "\tExpiration: " + UserInputCardExpiration);
-            System.out.println();
-
-            System.out.println("Is this information Correct?");
-            System.out.print("[Yes/No]: ");
-            String InformationCorrectChoice = scan.nextLine();
-
-            if(InformationCorrectChoice.equalsIgnoreCase("yes")) {
-                //Creating new card
-                debit CurrentCard = new debit();
-                CurrentCard.setCardAmount(Double.parseDouble(UserInputCardAmount));
-                CurrentCard.setHomeAddress(UserInputHomeAddress);
-                CurrentCard.setCardExpiration(UserInputCardExpiration);
-                CurrentCard.setCardCVV(UserInputCardCVV);
-                CurrentCard.setCardHolderFullName(UserInputName);
-                CurrentCard.setCardNumber(UserInputCardNumber);
-
-                // Add to saved data
-                App.DebitCardArrays.add(CurrentCard);
-                files.WriteFile("files/debits.csv", true, CurrentCard.toFormat());
-
-                // making payment
-                System.out.println();
-                System.out.println("Leave blank to pay all bills.");
-                System.out.print("Enter vendor name:");
-                String UserInputVendor = scan.nextLine();
-                if(UserInputVendor.isEmpty()) {
-                    UserInputVendor = null;
-                }
-                double CurrentBalance = CurrentCard.getCardAmount();
-                double Owed = MakePaymentAction(CurrentCard, UserInputVendor);
-                if(Owed != 0) {
-                    cli.LabelInformation("You paid %.2f for the transactions.", Owed);
-                    System.out.println("Do you request a Receipt?");
-                    System.out.print("[Yes/No]: ");
-                    String UserRequestReceipt = scan.nextLine(); // Ask if user wants receipt
-                    if(UserRequestReceipt.equalsIgnoreCase("yes")) {
-                        cli.LabelInformation("Processing Receipt.");
-                        Receipt.generate(Owed, Owed, 0, "Ledger Application", CurrentCard);
-
-                    } else {
-                        cli.LabelInformation("Declined Recipt.");
-                    }
-                } else {
-                    cli.LabelInformation("You have no bill.");
-                }
-            } else if(InformationCorrectChoice.equalsIgnoreCase("no")) {
-                // Rerun the application
-                MakePaymentCommand(scan);
-            } else {
-                System.out.println("Invalid option. Please re-try.");
-                MakePaymentCommand(scan);
-            }
+        Debit selectedCard = selectOrCreateCard(scan);
+        if (selectedCard != null) {
+            processPayment(scan, selectedCard);
         }
     }
 
-    private static double MakePaymentAction(debit Card, String Vendor){
-        double TotalOwed = 0;
-        int InvoiceNumber = (int) Math.round(Math.random() * 9999) + 1000;
-        String FormattedDescription = String.format("Invoice %d paid", InvoiceNumber);
-        if (Vendor == null) { // if vendor is null; Pay all bills that doesn't end with paid
-            for (int i = 0; i < App.TransactionsArray.size(); i++) {
-                if(!App.TransactionsArray.get(i).getDescription().endsWith("paid") && !App.TransactionsArray.get(i).getDescription().startsWith("Invoice")) { // checks to make sure it's not a invoice
-                    double NewAmount = Card.getCardAmount() - App.TransactionsArray.get(i).getAmount();
-                    TotalOwed += App.TransactionsArray.get(i).getAmount();
-                    Card.setCardAmount(NewAmount); // set the new amount
-                    App.TransactionsArray.get(i).setDescription(FormattedDescription);
+    private static Debit selectOrCreateCard(Scanner scan) {
+        int attempts = 0;
+        while (attempts < MAX_RETRY_ATTEMPTS) {
+            if (App.DebitCardArrays.isEmpty()) {
+                return createNewCard(scan);
+            } else if (App.DebitCardArrays.size() == 1) {
+                Debit card = App.DebitCardArrays.get(0);
+                if (confirmCardInformation(scan, card)) {
+                    return card;
                 }
+                attempts++;
+            } else {
+                Debit card = selectCardFromList(scan);
+                if (card != null) {
+                    if (confirmCardInformation(scan, card)) {
+                        return card;
+                    }
+                    attempts++;
+                } else {
+                    attempts++;
+                }
+            }
+        }
+        CLI.LabelWarning("Maximum retry attempts reached.");
+        return null;
+    }
+
+    private static Debit selectCardFromList(Scanner scan) {
+        System.out.println("===Select Debit Cards by Index Number===");
+        for (int i = 0; i < App.DebitCardArrays.size(); i++) {
+            System.out.printf("%d - %s%n", (i + 1), App.DebitCardArrays.get(i).getCardNumber());
+        }
+
+        try {
+            System.out.print("Choose Index Number: ");
+            int chooseNumber = scan.nextInt();
+            scan.nextLine();
+
+            if (chooseNumber < 1 || chooseNumber > App.DebitCardArrays.size()) {
+                CLI.LabelWarning("Invalid index. Please choose a number between 1 and " + App.DebitCardArrays.size());
+                return null;
+            }
+            return App.DebitCardArrays.get(chooseNumber - 1);
+        } catch (java.util.InputMismatchException e) {
+            scan.nextLine(); // Clear invalid input
+            CLI.LabelWarning("Error: Invalid input. Please enter a number.");
+            return null;
+        }
+    }
+
+    private static boolean confirmCardInformation(Scanner scan, Debit card) {
+        System.out.println();
+        System.out.println("\t\t=== Current Card Information ===");
+        System.out.println("\tCurrent Card: " + card.getCardNumber() + " | " + "\tCVV: " + card.getCardCVV());
+        System.out.println("\tCard Holder Name: " + card.getCardHolderFullName() + " | " + "\tAmount: " + card.getCardAmount());
+        System.out.println("\tCard Holder Address: " + card.getHomeAddress() + " | " + "\tExpiration: " + card.getCardExpiration());
+        System.out.println();
+
+        if (card.getCardAmount() < 0) {
+            CLI.LabelWarning("You're currently in debt. Using this card will increase your debt.");
+        }
+
+        System.out.println("Is this information correct?");
+        System.out.print("[Yes/No]: ");
+        String choice = scan.nextLine();
+        return choice.equalsIgnoreCase("yes");
+    }
+
+    private static Debit createNewCard(Scanner scan) {
+        int attempts = 0;
+        while (attempts < MAX_RETRY_ATTEMPTS) {
+            System.out.print("What is your name: ");
+            String userName = scan.nextLine();
+            System.out.print("What is your home address: ");
+            String userHomeAddress = scan.nextLine();
+            System.out.print("What is the Card Number: ");
+            String userCardNumber = scan.nextLine();
+
+            int userCardCVV;
+            try {
+                System.out.print("What is the Card CVV: ");
+                userCardCVV = scan.nextInt();
+                scan.nextLine();
+            } catch (java.util.InputMismatchException e) {
+                scan.nextLine();
+                CLI.LabelWarning("Invalid CVV. Please enter a number.");
+                attempts++;
+                continue;
+            }
+
+            System.out.print("What is the Card Expiration: ");
+            String userCardExpiration = scan.nextLine();
+
+            double userCardAmount;
+            try {
+                System.out.print("What is the Card Holding Amount: ");
+                userCardAmount = Double.parseDouble(scan.nextLine());
+            } catch (NumberFormatException e) {
+                CLI.LabelWarning("Invalid amount. Please enter a valid number.");
+                attempts++;
+                continue;
+            }
+
+            // Verify information
+            System.out.println();
+            System.out.println("\t\t== User Input Information ==");
+            System.out.println("\tCurrent Card: " + userCardNumber + " | " + "\tCVV: " + userCardCVV);
+            System.out.println("\tCard Holder Name: " + userName + " | " + "\tAmount: " + userCardAmount);
+            System.out.println("\tCard Holder Address: " + userHomeAddress + " | " + "\tExpiration: " + userCardExpiration);
+            System.out.println();
+
+            System.out.println("Is this information correct?");
+            System.out.print("[Yes/No]: ");
+            String choice = scan.nextLine();
+
+            if (choice.equalsIgnoreCase("yes")) {
+                Debit newCard = new Debit();
+                newCard.setCardAmount(userCardAmount);
+                newCard.setHomeAddress(userHomeAddress);
+                newCard.setCardExpiration(userCardExpiration);
+                newCard.setCardCVV(userCardCVV);
+                newCard.setCardHolderFullName(userName);
+                newCard.setCardNumber(userCardNumber);
+
+                App.DebitCardArrays.add(newCard);
+                FileUtils.WriteFile(FileUtils.DEBITS_FILE, true, newCard.toFormat());
+                CLI.LabelSuccess("Card added successfully.");
+                return newCard;
+            } else if (choice.equalsIgnoreCase("no")) {
+                attempts++;
+                CLI.LabelInformation("Let's try again.");
+            } else {
+                CLI.LabelWarning("Invalid option. Please enter Yes or No.");
+                attempts++;
+            }
+        }
+        CLI.LabelWarning("Maximum retry attempts reached.");
+        return null;
+    }
+
+    private static void processPayment(Scanner scan, Debit card) {
+        System.out.println();
+        System.out.println("Leave blank to pay all bills.");
+        System.out.print("Enter vendor name: ");
+        String userInputVendor = scan.nextLine();
+        if (userInputVendor.isEmpty()) {
+            userInputVendor = null;
+        }
+
+        double owed = MakePaymentAction(card, userInputVendor);
+        if (owed != 0) {
+            CLI.LabelInformation("You paid %.2f for the transactions.", Math.abs(owed));
+            System.out.println("Do you request a Receipt?");
+            System.out.print("[Yes/No]: ");
+            String userRequestReceipt = scan.nextLine();
+            if (userRequestReceipt.equalsIgnoreCase("yes")) {
+                CLI.LabelInformation("Processing Receipt.");
+                Receipt.generate(Math.abs(owed), Math.abs(owed), 0, "Ledger Application", card);
+            } else {
+                CLI.LabelInformation("Receipt declined.");
             }
         } else {
-            for (int i = 0; i < App.TransactionsArray.size(); i++) { // if vendor is not null; pay bills that doesn't end with paid.
-                if(App.TransactionsArray.get(i).getVendor().equalsIgnoreCase(Vendor)){
-                    if(!App.TransactionsArray.get(i).getDescription().endsWith("paid") && !App.TransactionsArray.get(i).getDescription().startsWith("Invoice")) { // checks to make sure it's not a invoice
-                        double NewAmount = Card.getCardAmount() - App.TransactionsArray.get(i).getAmount();
-                        TotalOwed += App.TransactionsArray.get(i).getAmount();
-                        Card.setCardAmount(NewAmount); // set the new amount
-                        App.TransactionsArray.get(i).setDescription(FormattedDescription);
-                    }
-                }
+            CLI.LabelInformation("You have no bill.");
+        }
+    }
+
+    private static double MakePaymentAction(Debit card, String vendor) {
+        double totalOwed = 0;
+        // Generate a secure random invoice number
+        int invoiceNumber = secureRandom.nextInt(9000) + 1000; // Range: 1000-9999
+        String formattedDescription = String.format("Invoice %d paid", invoiceNumber);
+
+        for (Transaction trans : App.TransactionsArray) {
+            boolean shouldPay = false;
+
+            // Determine if this Transaction should be paid
+            if (vendor == null) {
+                // Pay all unpaid bills
+                shouldPay = !trans.getDescription().endsWith("paid") &&
+                           !trans.getDescription().startsWith("Invoice");
+            } else {
+                // Pay bills for specific vendor
+                shouldPay = trans.getVendor().equalsIgnoreCase(vendor) &&
+                           !trans.getDescription().endsWith("paid") &&
+                           !trans.getDescription().startsWith("Invoice");
+            }
+
+            if (shouldPay) {
+                double newAmount = card.getCardAmount() - trans.getAmount();
+                totalOwed += trans.getAmount();
+                card.setCardAmount(newAmount);
+                trans.setDescription(formattedDescription);
             }
         }
-        StringBuilder NewContent = new StringBuilder();
-        for (int i = 0; i < App.TransactionsArray.size(); i++) {
-            NewContent.append(App.TransactionsArray.get(i).toFormat()).append("\n");
+
+        // Save updated data
+        StringBuilder transactionsContent = new StringBuilder();
+        for (Transaction trans : App.TransactionsArray) {
+            transactionsContent.append(trans.toFormat()).append("\n");
         }
-        StringBuilder NewDebitCardInfo = new StringBuilder();
-        for (int i = 0; i < App.DebitCardArrays.size(); i++) {
-            NewDebitCardInfo.append(App.DebitCardArrays.get(i).toFormat()).append("\n");
+
+        StringBuilder debitCardsContent = new StringBuilder();
+        for (Debit debitCard : App.DebitCardArrays) {
+            debitCardsContent.append(debitCard.toFormat()).append("\n");
         }
-        files.WriteWholeFile("files/transactions.csv", NewContent.toString()); // rewrite whole file
-        files.WriteWholeFile("files/debits.csv", NewDebitCardInfo.toString()); // rewrite whole file
-        return TotalOwed;
+
+        FileUtils.WriteWholeFile(FileUtils.TRANSACTIONS_FILE, transactionsContent.toString());
+        FileUtils.WriteWholeFile(FileUtils.DEBITS_FILE, debitCardsContent.toString());
+
+        return totalOwed;
     }
 }

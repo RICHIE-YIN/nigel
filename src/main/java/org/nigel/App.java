@@ -1,22 +1,22 @@
 package org.nigel;
 
-import org.nigel.models.debit;
-import org.nigel.models.transaction;
+import org.nigel.models.Debit;
+import org.nigel.models.Transaction;
 import org.nigel.screens.Home;
 import org.nigel.screens.Ledger;
 import org.nigel.screens.designs.HomeDesign;
 import org.nigel.screens.designs.LedgerDesign;
-import org.nigel.utils.cli;
+import org.nigel.utils.CLI;
 
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import static org.nigel.Services.Initalizing.LoadDebitCards;
-import static org.nigel.Services.Initalizing.LoadTransactions;
+import static org.nigel.Services.Initializing.LoadDebitCards;
+import static org.nigel.Services.Initializing.LoadTransactions;
 
 public class App {
-    public static ArrayList<transaction> TransactionsArray = new ArrayList<>();
-    public static ArrayList<debit> DebitCardArrays = new ArrayList<>();
+    public static ArrayList<Transaction> TransactionsArray = new ArrayList<>();
+    public static ArrayList<Debit> DebitCardArrays = new ArrayList<>();
 
     private static final Scanner scan = new Scanner(System.in);
     private static boolean AlreadyInit = false;
@@ -27,11 +27,11 @@ public class App {
     private static final String App_Creator = "Nigel";
 
     private static void Init() {
-        if (AlreadyInit == false) {
+        if (!AlreadyInit) {
             LoadTransactions(); // Load Transactions into TransactionsArray
             LoadDebitCards();
+            AlreadyInit = true;
         }
-        AlreadyInit = true;
     }
 
     public static void Menu(){
@@ -44,7 +44,7 @@ public class App {
             String ArgumentCorrection = Argument.split(" ")[0].toLowerCase();// Split the text in to a array, Grab first element and change to lowercase
             switch (ArgumentCorrection) { // Switch though each option till find a valid one.
                 case "d":
-                    Home.AddDeposit();
+                    Home.AddDeposit(scan);
                     break;
                 case "p":
                     Home.MakePaymentCommand(scan);
@@ -59,7 +59,7 @@ public class App {
                     KeepProgramOpen = false;
                     break;
                 default:
-                    cli.LabelInformation("Invalid command.");
+                    CLI.LabelInformation("Invalid command.");
             }
         }
     }
@@ -92,7 +92,7 @@ public class App {
                     Menu();
                     break;
                 default:
-                    cli.LabelInformation("Invalid command.");
+                    CLI.LabelInformation("Invalid command.");
             }
         }
     }

@@ -1,23 +1,23 @@
 package org.nigel.screens.designs;
 
-import org.nigel.models.debit;
-import org.nigel.utils.cli;
+import org.nigel.models.Debit;
+import org.nigel.utils.CLI;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.util.Calendar;
 
 public class Receipt {
-    public static void generate(double subtotal, double total, double tax, String CompanyName, debit card) {
+    public static void generate(double subtotal, double total, double tax, String CompanyName, Debit card) {
         String getToday = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
         String Time = LocalTime.now().toString();
         printReceipt(getToday, Time, subtotal, total, tax, CompanyName, card);
     }
 
-    private static void printReceipt(String Date, String Time, double subtotal, double tax, double total, String CompanyName, debit Card) {
+    private static void printReceipt(String Date, String Time, double subtotal, double tax, double total, String CompanyName, Debit Card) {
         // You would replace this with dynamic data
         String CompanyWebsite = String.format("%s.com", CompanyName);
-        System.out.println(cli.ANSI_WHITE_BACKGROUND + cli.ANSI_BLACK +"========================================");
+        System.out.println(CLI.ANSI_WHITE_BACKGROUND + CLI.ANSI_BLACK +"========================================");
         System.out.printf("           **%s**\n", CompanyName);
         System.out.println("         123 Main St, Anytown, USA");
         System.out.printf("          (555) 123-4567 | %s%n", CompanyWebsite);
@@ -43,6 +43,6 @@ public class Receipt {
         System.out.println("----------------------------------------");
         System.out.println("           **THANK YOU FOR YOUR BUSINESS!**");
         System.out.println("             Please visit us again soon!");
-        System.out.println("========================================" + cli.ANSI_RESET);
+        System.out.println("========================================" + CLI.ANSI_RESET);
     }
 }

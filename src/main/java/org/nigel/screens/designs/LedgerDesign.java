@@ -1,7 +1,7 @@
 package org.nigel.screens.designs;
 
-import static org.nigel.utils.cli.ANSI_CYAN;
-import static org.nigel.utils.cli.ANSI_RESET;
+import static org.nigel.utils.CLI.ANSI_CYAN;
+import static org.nigel.utils.CLI.ANSI_RESET;
 
 public class LedgerDesign {
     public static void HomeScreen() {
