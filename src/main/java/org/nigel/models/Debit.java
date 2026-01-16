@@ -1,6 +1,6 @@
 package org.nigel.models;
 
-public class debit {
+public class Debit {
     public String getCardNumber() {
         return CardNumber;
     }
@@ -57,8 +57,8 @@ public class debit {
     private double CardAmount;
 
     //
-    public debit() {}
-    public debit(String CardNumber, int CardCVV, String CardExpiration, String HomeAddress, String CardHolderFullName, float CardAmount) {
+    public Debit() {}
+    public Debit(String CardNumber, int CardCVV, String CardExpiration, String HomeAddress, String CardHolderFullName, double CardAmount) {
         this.CardNumber = CardNumber;
         this.CardCVV = CardCVV;
         this.CardExpiration = CardExpiration;

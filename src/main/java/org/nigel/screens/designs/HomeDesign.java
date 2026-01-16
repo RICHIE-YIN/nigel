@@ -1,6 +1,6 @@
 package org.nigel.screens.designs;
 
-import static org.nigel.utils.cli.*;
+import static org.nigel.utils.CLI.*;
 
 public class HomeDesign { // Display designs for challenge
     private static String DollarDesign = """
